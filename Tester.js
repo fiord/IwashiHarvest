@@ -23,10 +23,10 @@ for(let i = 0; i < 80; i++) {
 
 // iwashi
 for(let i = 0; i < 80; i++) {
-    while(testMap[y][x] < 0) {
+    do {
         x = Math.floor(Math.random() * W);
         y = Math.floor(Math.random() * H);
-    }
+    }while(testMap[y][x] < 0);
     testMap[y][x] += 1;
 }
 Iwashi.iwashiMap = testMap;
@@ -42,7 +42,7 @@ Iwashi.player.y = y;
 while(Iwashi.currentTurn <= Iwashi.T) {
     console.log(Iwashi.currentTurn, Iwashi.score);
     let input = Iwashi.output();
-    let filename = `./data/test_${("00"+(Iwashi.currentTurn-1)).split(-3)}.txt`;
+    let filename = `./data/test_${("00"+(Iwashi.currentTurn-1)).slice(-3)}.txt`;
     fs.writeFile(filename, input.join("\n"), (err) => {if(err) throw err;});
     let move = AI.run(input);
     console.log(move);
