@@ -8,69 +8,66 @@ class AI {
         return Math.abs(x1-x2) + Math.abs(y1-y2);
     }
     
-    iwashiMove(iwashiMap, maps, player, H, W) {
-        var distanceMap = new Array(H);
-        for(let i = 0; i < H; i++)  distanceMap[i] = new Array(W).fill(H * W);
-        var queue = [];
+    iwashiMove(iwashiMap, player, maps, H, W) {
         const dx = [0, 1, 0, -1, 0];
         const dy = [-1, 0, 1, 0, 0];
-        
-        // player
-        if(player.paralyzed === 0) {
-            distanceMap[player.y][player.x] = 0;
-            queue.push({x: player.x, y: player.y});
+        let nextIwashiMap = new Array(H);
+        for (let i = 0; i < H; i++) {
+            nextIwashiMap[i] = new Array(W).fill(0);
         }
-        // iwashi
-        for(let i = 0; i < H; i++) {
-            for(let j = 0; j < W; j++) {
-                if(iwashiMap[i][j] > 0) {
-                    distanceMap[i][j] = 0;
-                    queue.push({x: j, y: i});
+        for (let i = 0; i < H; i++) {
+            for (let j = 0; j < W; j++) {
+                if (maps[i][j] === '#') {
+                    continue;
+                } else if (nextIwashiMap[i][j] > 0) {
+                    nextIwashiMap[i][j] += iwashiMap[i][j];
+                    continue;
                 }
-                else if(player.pos == {x: j, y: i}) {
-                    distanceMap[i][j] = 0;
-                    queue.push({x: j, y: i});
+                let distanceMap = new Array(H);
+                for (let k = 0; k < H; k++) {
+                    distanceMap[k] = new Array(W).fill(H * W);
                 }
-            }
-        }
-    
-        while(queue.length > 0) {
-            var pos = queue.shift();
-            for(let i = 0; i < 4; i++) {
-                let nx = pos.x + dx[i];
-                let ny = pos.y + dy[i];
-                if(maps[ny][nx] === "#")  continue;
-                if(distanceMap[ny][nx] > distanceMap[pos.y][pos.x] + 1) {
-                    distanceMap[ny][nx] = distanceMap[pos.y][pos.x] + 1;
-                    queue.push({x: nx, y: ny});
-                }
-            }
-        }
-    
-        var nextIwashiMap = new Array(H);
-        for(let i = 0; i < H; i++)  nextIwashiMap[i] = new Array(W).fill(0);
-        
-        for(let i = 0; i < H; i++) {
-            for(let j = 0; j < W; j++) {
-                if(iwashiMap[i][j] > 0) {
-                    if(nextIwashiMap[i][j] > 0) {
-                        nextIwashiMap[i][j] += iwashiMap[i][j];
-                    }
-                    else {
-                            for(let k = 0; k < 5; k++) {
-                            let ni = i + dy[k];
-                            let nj = j + dx[k];
-                            if(maps[ni][nj] === "#")    continue;
-                            if(distanceMap[i][j] > distanceMap[ni][nj] || k == 4) {
-                                nextIwashiMap[ni][nj] += iwashiMap[i][j];
-                                break;
-                            }
+                let queue = [];
+                for (let y = 0; y < H; y++) {
+                    for (let x = 0; x < W; x++) {
+                        if (maps[y][x] === '#') continue;
+                        if (i === y && j === x) continue;
+                        if (iwashiMap[y][x] > 0) {
+                            distanceMap[y][x] = 0;
+                            queue.push({y, x});
                         }
                     }
                 }
+                if (player.paralyzed === 0) {
+                    distanceMap[player.y][player.x] = 0;
+                    queue.push({y: player.y, x: player.x});
+                }
+                while (queue.length > 0) {
+                    let pos = queue.shift();
+                    for(let k = 0; k < 4; k++) {
+                        let nx = pos.x + dx[k];
+                        let ny = pos.y + dy[k];
+                        if (!this.isInside(ny, nx)) continue;
+                        if (maps[ny][nx] === '#')   continue;
+                        if (distanceMap[ny][nx] > distanceMap[pos.y][pos.x] + 1) {
+                            distanceMap[ny][nx] = distanceMap[pos.y][pos.x] + 1;
+                            queue.push({x: nx, y: ny});
+                        }
+                    }
+                }
+                for (let k = 0; k < 5; k++) {
+                    let ni = i + dy[k];
+                    let nj = j + dx[k];
+                    if (!this.isInside(ni, nj)) continue;
+                    if (maps[ni][nj] === '#') continue;
+                    if (distanceMap[i][j] > distanceMap[ni][nj] || k === 4) {
+                        nextIwashiMap[ni][nj] += iwashiMap[i][j];
+                        break;
+                    }
+                }
             }
         }
-    
+
         return nextIwashiMap;
     }
 
@@ -89,6 +86,7 @@ class AI {
             paralyzed: Number(arr[2])
         };
 
+        
         var maps = new Array(H);
         for(let i = 0; i < H; i++) {
             maps[i] = input[i + 2];
@@ -102,18 +100,19 @@ class AI {
                 t: parseInt(line[2])
             };
         }
-
+        
         var iwashiMap = new Array(H);
         for(let i = 0; i < H; i++)  iwashiMap[i] = new Array(W).fill(0);
         var iwashiIdx = 0;
         iwashi.sort((a, b) => (a.t-b.t));
         while(iwashiIdx < N && iwashi[iwashiIdx].t === 0) {
-            iwashiMap[iwashi[iwashiIdx].y][iwashi[iwashiIdx.x]]++;
+            iwashiMap[iwashi[iwashiIdx].y][iwashi[iwashiIdx].x]++;
+            iwashiIdx++;
         }
-
+        
         let ret = "";
         let turn = 0;
-        while(turn++ < N) {
+        while(turn++ < T) {
             if(player.paralyzed > 0) {
                 ret += "A";
             }
@@ -166,14 +165,12 @@ class AI {
                     }
                 }
                 ret += str[to];
-                player.x += dx[i];
-                player.y += dy[i];
+                player.x += dx[to];
+                player.y += dy[to];
             }
 
             // iwashimove
-            iwashiMap = this.iwashiMove(iwashiMap, maps, player, H, W);
-
-            
+            iwashiMap = this.iwashiMove(iwashiMap, player, maps, H, W);
 
             if(player.paralyzed > 0) {
                 player.paralyzed--;
@@ -183,6 +180,7 @@ class AI {
             }
             else if(iwashiMap[player.y][player.x] > 5) {
                 player.paralyzed += 5;
+                iwashiMap[player.y][player.x] = 0;
             }
         }
         return ret;
